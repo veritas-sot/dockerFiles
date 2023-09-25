@@ -1,0 +1,25 @@
+version: '3'
+services:
+  influxdb:
+    image: influxdb:latest
+    container_name: influxdb2
+    restart: unless-stopped
+    networks:
+      - backend
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=_your_username_
+      - DOCKER_INFLUXDB_INIT_PASSWORD=_your_password_here_
+      - DOCKER_INFLUXDB_INIT_ORG=_your_org_
+      - DOCKER_INFLUXDB_INIT_BUCKET=_your_bucket_
+      - DOCKER_INFLUXDB_INIT_RETENTION=1w
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=_your_token_
+    volumes:
+      - /opt/docker-volumes/influxdb:/root/.influxdbv2
+    ports:
+      - "8086:8086"
+
+networks:
+  backend:
+    name: traefik-portainer_backend
+    external: true
