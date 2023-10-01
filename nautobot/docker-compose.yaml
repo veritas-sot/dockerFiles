@@ -2,13 +2,23 @@
 version: "3.7"
 services:
   nautobot:
-    image: "networktocode/nautobot:${NAUTOBOT_IMAGE:-2.0}-py${PYTHON_VER:-3.11}"
+    image: "networktocode/nautobot:${NAUTOBOT_IMAGE:-2.0}-py${PYTHON_VER:-3.10}"
     env_file:
-      - "local.env"
-    ports:
-      - "8443:8443"
-      - "8080:8080"
+      - "stack.env"
+    expose:
+      -  8080
     restart: "unless-stopped"
+    networks:
+      - backend
+    labels:
+      traefik.enable: true
+      traefik.http.routers.nautobot.entrypoints: websecure
+      traefik.http.routers.nautobot.rule: Host(`nautobot.domain.tld`)
+      traefik.http.routers.nautobot.tls: true
+      traefik.http.routers.nautobot.tls.certresolver: letsencrypt
+      traefik.http.routers.nautobot.service: nautobot
+      traefik.http.services.nautobot.loadbalancer.server.port: 8080
+    
   # ----------------------------------
   # Celery worker must only be used in > 1.1.0 installs. If setting to a previous install, remove this worker
   # ----------------------------------
@@ -21,11 +31,13 @@ services:
       start_period: "5s"
       retries: 3
       test: ["CMD", "nautobot-server", "health_check"]
+    networks:
+      - backend
     depends_on:
       - "nautobot"
       - "redis"
     env_file:
-      - "./local.env"
+      - "./stack.env"
     tty: true
   # ----------------------------------
   # Celery beat must only be used in > 1.2.0 installs. If setting to a previous install, remove this worker
@@ -33,6 +45,8 @@ services:
   celery_beat:
     image: "networktocode/nautobot:${NAUTOBOT_IMAGE:-2.0}-py${PYTHON_VER:-3.11}"
     entrypoint: "sh -c 'nautobot-server celery beat -l $$NAUTOBOT_LOG_LEVEL'"
+    networks:
+      - backend
     healthcheck:
       interval: "5s"
       timeout: "5s"
@@ -43,26 +57,22 @@ services:
       - "nautobot"
       - "redis"
     env_file:
-      - "./local.env"
+      - "./stack.env"
     tty: true
   redis:
     image: "redis:alpine"
     env_file:
-      - "local.env"
+      - "stack.env"
     command:
       - "sh"
       - "-c"  # this is to evaluate the $REDIS_PASSWORD from the env
       - "redis-server --appendonly yes --requirepass $$NAUTOBOT_REDIS_PASSWORD"  ## $$ because of docker-compose
     restart: "unless-stopped"
-  db:
-    image: "postgres:13"
-    # Apple Silicon has issues with Postgres14, there is no needed functions to get to Postgres14 for Nautobot to work.
-    env_file:
-      - "local.env"
-    environment:
-      NAUTOBOT_DB_ENGINE: "django.db.backends.postgres"
-    volumes:
-      - "db_data:/var/lib/postgresql/data"
-    restart: "unless-stopped"
+    networks:
+      - backend
 volumes:
   db_data:
+networks:
+  backend:
+    name: traefik-portainer_backend
+    external: true
