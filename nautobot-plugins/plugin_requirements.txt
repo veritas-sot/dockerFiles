@@ -1,1 +1,3 @@
 nautobot-device-onboarding
+nautobot-golden-config
+nautobot-plugin-nornir
