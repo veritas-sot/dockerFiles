@@ -1,0 +1,36 @@
+---
+version: "3.7"
+services:
+  nautobot:
+    image: "veritas-sot/nautobot-2.0.5-plugins:latest"
+    build:
+      context: "."
+      dockerfile: "Dockerfile-Plugins"
+      args:
+        PYTHON_VER: "${PYTHON_VER:-3.11}"
+    env_file:
+      - "local.env"
+    ports:
+      - "8443:8443"
+      - "8080:8080"
+    restart: "unless-stopped"
+  nautobot-worker:
+    image: "veritas-sot/nautobot-2.0.5-plugins:latest"
+    build:
+      context: "."
+      dockerfile: "Dockerfile-Plugins"
+      args:
+        PYTHON_VER: "${PYTHON_VER:-3.11}"
+    env_file:
+      - "local.env"
+    restart: "unless-stopped"
+  celery_worker:
+    image: "veritas-sot/nautobot-2.0.5-plugins:latest"
+    build:
+      context: "."
+      dockerfile: "Dockerfile-Plugins"
+      args:
+        PYTHON_VER: "${PYTHON_VER:-3.11}"
+    env_file:
+      - "local.env"
+    restart: "unless-stopped"
